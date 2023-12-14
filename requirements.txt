@@ -1,0 +1,4 @@
+timm
+segmentation_models_pytorch
+numba
+albumentations
