@@ -34,29 +34,23 @@ class MyLoader(Dataset):
         if self.mode == "x":
             img = self.images[index, :, :]
             msk = self.labels[index, :, :]
-            if self.train:
-                k_msk = self.kidney_labels[index, :, :]
+            k_msk = self.kidney_labels[index, :, :]
         
         elif self.mode == "y":
             img = self.images[:, index, :]
             msk = self.labels[:, index, :]
-            if self.train:
-                k_msk = self.kidney_labels[:, index, :]
+            k_msk = self.kidney_labels[:, index, :]
             
         elif self.mode == "z":
             img = self.images[:, :, index]
             msk = self.labels[:, :, index]
-            if self.train:
-                k_msk = self.kidney_labels[:, :, index]
+            k_msk = self.kidney_labels[:, :, index]
         
         img = np.array(img).astype(np.float32)
         img = (img - img.min()) / (img.max() - img.min() + 0.0001)
         msk = np.array(msk)/255
         # k_msk = cv2.resize(k_msk, (msk.shape[1], msk.shape[0]), interpolation=cv2.INTER_NEAREST)
-        if self.train:
-            msk = np.stack((msk, k_msk), axis=-1)
-        else:
-            msk = np.expand_dims(msk, axis=-1)
+        msk = np.stack((msk, k_msk), axis=-1)
         img = np.expand_dims(img, axis=-1)
         
         if self.train:
@@ -104,10 +98,11 @@ def get_loader(mode, data_dir, train_bs, valid_bs):
         valid_data = np.load(f"{path}/kidney_3_dense.npz")
         valid_images = valid_data["images"]
         valid_labels = valid_data["labels"]
+        valid_kidney_labels = np.load(f"{path}/kidney_3_dense_mask.npy")
         del valid_data
-        valid_x = MyLoader(valid_images, valid_labels, None, train=False, mode="x")
-        valid_y = MyLoader(valid_images, valid_labels, None, train=False, mode="y")
-        valid_z = MyLoader(valid_images, valid_labels, None, train=False, mode="z")
+        valid_x = MyLoader(valid_images, valid_labels, valid_kidney_labels, train=False, mode="x")
+        valid_y = MyLoader(valid_images, valid_labels, valid_kidney_labels, train=False, mode="y")
+        valid_z = MyLoader(valid_images, valid_labels, valid_kidney_labels, train=False, mode="z")
         valid_x = DataLoader(valid_x, batch_size=valid_bs, shuffle=False, pin_memory=True)
         valid_y = DataLoader(valid_y, batch_size=valid_bs, shuffle=False, pin_memory=True)
         valid_z = DataLoader(valid_z, batch_size=valid_bs, shuffle=False, pin_memory=True)
