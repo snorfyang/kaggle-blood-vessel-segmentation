@@ -81,7 +81,8 @@ class Net(nn.Module):
             skip_channel= encoder_dim[:-1][::-1]+[0],
             out_channel = decoder_dim,
         )
-        self.logit = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
+        self.vessel = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
+        self.kidney = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
 
 
     def forward(self, image):
@@ -110,10 +111,15 @@ class Net(nn.Module):
         #[print(f'decode_{i}', e.shape) for i,e in enumerate(decode)]
         #print('last', last.shape)
 
-        logit = self.logit(last).float()
-        mask = F.logsigmoid(logit).exp()
-        mask = mask[:, :, :H, :W].contiguous()
-        return mask
+        vessel = self.vessel(last).float()
+        vessel = F.logsigmoid(vessel).exp()
+        vessel = vessel[:, :, :H, :W].contiguous()
+        
+        kidney = self.kidney(last).float()
+        kidney = F.logsigmoid(kidney).exp()
+        kidney = kidney[:, :, :H, :W].contiguous()
+        
+        return vessel, kidney
 
 class NewNet(nn.Module):
     def __init__(self):
@@ -128,7 +134,8 @@ class NewNet(nn.Module):
             skip_channel= encoder_dim[:-1][::-1]+[0],
             out_channel = decoder_dim,
         )
-        self.logit = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
+        self.vessel = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
+        self.kidney = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
         self.stem0 = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), nn.ReLU(inplace=True))
         self.stem1 = nn.Sequential(nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), nn.ReLU(inplace=True))
 
@@ -156,11 +163,15 @@ class NewNet(nn.Module):
             feature=encode[-1], skip=encode[:-1][::-1]
         )
 
-
-        logit = self.logit(last).float()
-        mask = F.logsigmoid(logit).exp()
-        mask = mask[:, :, :H, :W].contiguous()
-        return mask
+        vessel = self.vessel(last).float()
+        vessel = F.logsigmoid(vessel).exp()
+        vessel = vessel[:, :, :H, :W].contiguous()
+        
+        kidney = self.kidney(last).float()
+        kidney = F.logsigmoid(kidney).exp()
+        kidney = kidney[:, :, :H, :W].contiguous()
+        
+        return vessel, kidney
 
 def run_check_net():
     height, width = 260, 256
@@ -172,10 +183,11 @@ def run_check_net():
 
     with torch.no_grad():
         with torch.cuda.amp.autocast(enabled=True):
-            mask = net(image)
+            v, k = net(image)
 
     print('image', image.shape)
-    print('mask', mask.shape)
+    print('vessel', v.shape)
+    print('kidney', k.shape)
 
 run_check_net()
 torch.cuda.empty_cache()

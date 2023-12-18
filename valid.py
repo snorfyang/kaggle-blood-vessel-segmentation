@@ -29,7 +29,7 @@ def tta_inverse_transforms(preds):
         gc.collect()
         return ret
 
-def valid(kidney_model, mask_model):
+def valid(m):
     seed_everything(42)
     valid_x, valid_y, valid_z = get_loader('valid', '/storage', 4, 4)
     
@@ -37,17 +37,13 @@ def valid(kidney_model, mask_model):
     height = 1706
     width = 1510
     
-    model1 = get_old_model()
-    model1.load_state_dict(torch.load(kidney_model))
-    model1.eval()
-    model2 = get_model()
-    model2.load_state_dict(torch.load(mask_model))
-    model2.eval()
+    model = get_model()
+    model.load_state_dict(torch.load(m))
+    model.eval()
 
 
     sub = []
-    model1 = model1.cuda()
-    model2 = model2.cuda()
+    model = model.cuda()
     
     accumulator_m = np.zeros((depth, height, width))
     accumulator_k = np.zeros((depth, height, width))
@@ -62,8 +58,7 @@ def valid(kidney_model, mask_model):
                     tta_kidneys, tta_masks = [], []
 
                     for tta_image in tta_images:
-                        kidneys = model1(tta_image)
-                        masks = model2(tta_image)
+                        masks, kidneys = model(tta_image)
                         tta_kidneys.append(kidneys)
                         tta_masks.append(masks)
 
@@ -126,10 +121,10 @@ def valid(kidney_model, mask_model):
     submission.to_csv('submission.csv')
     _gt_df = pd.merge(df, submission.loc[:, ["id"]], on="id").reset_index(drop=True)
     val_score = score(submission, _gt_df)
-    return val_score
+    print(val_score)
 
 if __name__ == "__main__":
-    valid('resnet50d-unet-1nq7wul1.pt', 'convnext-unet-14azqufb.pt')
+    valid('convnext-unet-1ohr1hkt.pt')
 
 
     

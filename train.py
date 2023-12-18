@@ -1,7 +1,6 @@
 import gc
 import numpy as np
 from tqdm import tqdm
-import itertools
 import wandb
 import torch
 from torch.cuda.amp import GradScaler, autocast
@@ -40,7 +39,8 @@ def validate(model, loaders, device, criterion):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 with autocast():
-                    outputs = model(inputs)
+                    v, k = model(inputs)
+                    outputs = torch.cat((v, k), dim=1)
                     loss = criterion(outputs, labels)
                 running_loss += loss.item()
             
@@ -96,7 +96,8 @@ def main():
                 optimizer.zero_grad()
 
                 with autocast():
-                    outputs = model(inputs)
+                    v, k = model(inputs)
+                    outputs = torch.cat((v, k), dim=1)
                     loss = criterion(outputs, labels)
                 if CFG.debug:
                     print('loss', loss.item())
@@ -151,6 +152,5 @@ def main():
 if __name__ == '__main__':
     model = main()
     print(f'Best model saved as {model}.')
-    score = valid('resnet50d-unet-1nq7wul1.pt', model)
-    print(f'Validation score: {score}')
+    valid(model)
 
