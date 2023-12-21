@@ -8,7 +8,8 @@ from torch.cuda.amp import GradScaler, autocast
 from criterion.loss import get_criterion
 from criterion.metric import surface_dice
 from dataset.dataset import get_loader
-from models.model import get_model
+from models.ConvNeXt_U import ConvNeXt_U
+from models.ResNet_U import ResNet_U
 from optimizer.optimizer import get_optimizer
 from scheduler.scheduler import get_scheduler
 from utils.util import seed_everything
@@ -18,7 +19,7 @@ gc.collect()
 class CFG:
     seed          = 42
     model_type    = '2D'
-    model_name    = 'convnext-unet'
+    model_name    = 'resnet50d-unet'
     train_bs      = 4
     valid_bs      = 4
     lr            = 5e-4
@@ -55,10 +56,7 @@ def main():
         wandb.login()
     seed_everything(CFG.seed)
     tag = [CFG.model_name]
-    m = 'vessel'
-    if CFG.kidney_mask:
-        tag.append('kidney_mask')
-        m = 'kidney'
+
         
     train_x, train_y, train_z, valid_x, valid_y, valid_z = get_loader('train', CFG.data_dir, CFG.train_bs, CFG.valid_bs)
     
@@ -75,7 +73,7 @@ def main():
         
     
     device = CFG.device
-    model = get_model()
+    model = ResNet_U().cuda()
     optimizer = get_optimizer(model, CFG)
     scheduler = get_scheduler(optimizer, CFG)
     criterion = get_criterion()

@@ -7,7 +7,8 @@ import gc
 import os
 from utils.util import seed_everything, rle_encode
 from dataset.dataset import get_loader
-from models.model import get_model, get_old_model
+from models.ConvNeXt_U import ConvNeXt_U
+from models.ResNet_U import ResNet_U
 from criterion.metric import score
 
 
@@ -37,13 +38,11 @@ def valid(m):
     height = 1706
     width = 1510
     
-    model = get_model()
+    model = ResNet_U().cuda()
     model.load_state_dict(torch.load(m))
     model.eval()
 
-
     sub = []
-    model = model.cuda()
     
     accumulator_m = np.zeros((depth, height, width))
     accumulator_k = np.zeros((depth, height, width))
