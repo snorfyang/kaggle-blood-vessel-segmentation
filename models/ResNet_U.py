@@ -10,8 +10,8 @@ from .layers import *
 class ResNet_U(nn.Module):
     def __init__(self):
         super().__init__() 
-        encoder_dim = [32, 64, 256, 512, 1024, 2048]
-        decoder_dim = [256, 128, 128, 64, 32 ]
+        encoder_dim = [64, 128, 256, 512, 1024, 2048]
+        decoder_dim = [1024, 512, 256, 128, 64]
 
         self.encoder = resnet50d(pretrained=True, in_chans=3)
 
@@ -20,7 +20,10 @@ class ResNet_U(nn.Module):
             skip_channel= encoder_dim[:-1][::-1]+[0],
             out_channel = decoder_dim,
         )
-        self.stem0 = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), nn.ReLU(inplace=True))
+        self.stem0 = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1), 
+                                   nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
+                                   nn.ReLU(inplace=True),
+                                   )
         self.vessel = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
         self.kidney = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
 

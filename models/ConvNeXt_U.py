@@ -9,20 +9,26 @@ from .layers import *
 class ConvNeXt_U(nn.Module):
     def __init__(self):
         super().__init__() 
-        encoder_dim = [32, 64, 96, 192, 384, 768]
-        decoder_dim = [256, 128, 128, 64, 32]
+        encoder_dim = [24, 48, 96, 192, 384, 768]
+        decoder_dim = [384, 192, 96, 48, 24]
 
-        self.encoder = create_model('convnext_small.fb_in22k', pretrained=True, in_chans=3)
+        self.encoder = create_model('convnext_small.fb_in22k', pretrained=False, in_chans=3)
 
         self.decoder = MyUnetDecoder(
             in_channel  = encoder_dim[-1],
-            skip_channel= encoder_dim[:-1][::-1]+[0],
+            skip_channel= encoder_dim[:-1][::-1],
             out_channel = decoder_dim,
         )
         self.vessel = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
         self.kidney = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
-        self.stem0 = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), nn.ReLU(inplace=True))
-        self.stem1 = nn.Sequential(nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), nn.ReLU(inplace=True))
+        self.stem0 = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=24, kernel_size=3, stride=1, padding=1), 
+                                   nn.BatchNorm2d(24, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
+                                   nn.ReLU(inplace=True),
+                                   )
+        self.stem1 = nn.Sequential(nn.Conv2d(in_channels=24, out_channels=48, kernel_size=3, stride=1, padding=1), 
+                                   nn.BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
+                                   nn.ReLU(inplace=True),
+                                   )
 
     def forward(self, image):
         B, C, H, W = image.shape
@@ -44,7 +50,7 @@ class ConvNeXt_U(nn.Module):
         x = e.stages[2](x); encode.append(x)
         x = e.stages[3](x); encode.append(x)
         #[print(f'encode_{i}', e.shape) for i,e in enumerate(encode)]
-        last, _ = self.decoder(
+        last = self.decoder(
             feature=encode[-1], skip=encode[:-1][::-1]
         )
 
