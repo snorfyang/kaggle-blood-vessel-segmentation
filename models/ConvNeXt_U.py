@@ -12,7 +12,7 @@ class ConvNeXt_U(nn.Module):
         encoder_dim = [24, 48, 96, 192, 384, 768]
         decoder_dim = [384, 192, 96, 48, 24]
 
-        self.encoder = create_model('convnext_small.fb_in22k', pretrained=False, in_chans=3)
+        self.encoder = create_model('convnext_small.fb_in22k', pretrained=True, in_chans=3)
 
         self.decoder = MyUnetDecoder(
             in_channel  = encoder_dim[-1],
@@ -31,7 +31,7 @@ class ConvNeXt_U(nn.Module):
                                    )
 
     def forward(self, image):
-        B, C, H, W = image.shape
+        _, _, H, W = image.shape
         H_pad = (32 - H % 32) % 32
         W_pad = (32 - W % 32) % 32
         x = F.pad(image, (0, W_pad, 0, H_pad), 'constant', 0)
