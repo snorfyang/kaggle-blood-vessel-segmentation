@@ -139,8 +139,6 @@ def main():
         # artifact.add_file(f'{CFG.model_name}-{run.id}-last.pt')
         wandb.log_artifact(artifact)
 
-        wandb.finish()
-
     torch.cuda.empty_cache()
     gc.collect()
     print('Training Complete')
@@ -150,5 +148,7 @@ def main():
 if __name__ == '__main__':
     model = main()
     print(f'Best model saved as {model}.')
-    valid(model)
+    val_score = valid(model)
+    wandb.log({'surface_dice': val_score})
+    wandb.finish()
 

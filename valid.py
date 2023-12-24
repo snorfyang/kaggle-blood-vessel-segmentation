@@ -121,6 +121,7 @@ def valid(m):
     _gt_df = pd.merge(df, submission.loc[:, ["id"]], on="id").reset_index(drop=True)
     val_score = score(submission, _gt_df)
     print(val_score)
+    return val_score
 
 if __name__ == "__main__":
     valid('convnext-unet-1ohr1hkt.pt')
