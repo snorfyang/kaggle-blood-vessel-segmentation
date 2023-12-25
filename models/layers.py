@@ -3,6 +3,34 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class sSE(nn.Module):
+    def __init__(self, out_channels):
+        super(sSE, self).__init__()
+        self.conv = nn.Sequential(nn.Conv2d(out_channels, 1, kernel_size=1,padding=0),
+                                  nn.BatchNorm2d(1),
+                                  nn.Sigmoid())
+    def forward(self,x):
+        x=self.conv(x)
+        return x
+
+class cSE(nn.Module):
+    def __init__(self, out_channels):
+        super(cSE, self).__init__()
+        self.conv1 = nn.Sequential(nn.Conv2d(out_channels, int(out_channels/2), kernel_size=1,padding=0),
+                                   nn.BatchNorm2d(int(out_channels/2)),
+                                   nn.ReLU(inplace=True),
+                                   )
+                        
+        self.conv2 = nn.Sequential(nn.Conv2d(int(out_channels/2), out_channels, kernel_size=1,padding=0),
+                                   nn.BatchNorm2d(out_channels),
+                                   nn.Sigmoid(),
+                                   )
+    def forward(self,x):
+        x=nn.AvgPool2d(x.size()[2:])(x)
+        x=self.conv1(x)
+        x=self.conv2(x)
+        return x
+    
 class MyDecoderBlock(nn.Module):
     def __init__(
         self,
@@ -22,6 +50,8 @@ class MyDecoderBlock(nn.Module):
             nn.BatchNorm2d(out_channel),
             nn.ReLU(inplace=True),
         )
+        self.spatial_gate = sSE(out_channel)
+        self.channel_gate = cSE(out_channel)
 
 
     def forward(self, x, skip=None):
@@ -30,6 +60,9 @@ class MyDecoderBlock(nn.Module):
             x = torch.cat([x, skip], dim=1)
         x = self.conv1(x)
         x = self.conv2(x)
+        g1 = self.spatial_gate(x)
+        g2 = self.channel_gate(x)
+        x = g1*x + g2*x
         return x
 
 
