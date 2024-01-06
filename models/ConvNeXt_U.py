@@ -12,7 +12,7 @@ class ConvNeXt_U(nn.Module):
         encoder_dim = [24, 48, 96, 192, 384, 768]
         decoder_dim = [384, 192, 96, 48, 24]
 
-        self.encoder = create_model('convnext_small.fb_in22k', pretrained=True, in_chans=3)
+        self.encoder = create_model('convnext_small.fb_in22k', pretrained=False, in_chans=1)
 
         self.decoder = MyUnetDecoder(
             in_channel  = encoder_dim[-1],
@@ -21,22 +21,27 @@ class ConvNeXt_U(nn.Module):
         )
         self.vessel = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
         self.kidney = nn.Conv2d(decoder_dim[-1], 1, kernel_size=1)
-        self.stem0 = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=24, kernel_size=3, stride=1, padding=1), 
+        self.stem0 = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=24, kernel_size=3, stride=1, padding=1), 
                                    nn.BatchNorm2d(24, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
                                    nn.ReLU(inplace=True),
-                                   )
+                                   nn.Conv2d(in_channels=24, out_channels=24, kernel_size=3, stride=1, padding=1), 
+                                   nn.BatchNorm2d(24, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
+                                   nn.ReLU(inplace=True),
+                                  )
         self.stem1 = nn.Sequential(nn.Conv2d(in_channels=24, out_channels=48, kernel_size=3, stride=1, padding=1), 
                                    nn.BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
                                    nn.ReLU(inplace=True),
-                                   )
+                                   nn.Conv2d(in_channels=48, out_channels=48, kernel_size=3, stride=1, padding=1), 
+                                   nn.BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True), 
+                                   nn.ReLU(inplace=True),
+                                  )
 
     def forward(self, image):
         _, _, H, W = image.shape
         H_pad = (32 - H % 32) % 32
         W_pad = (32 - W % 32) % 32
         x = F.pad(image, (0, W_pad, 0, H_pad), 'constant', 0)
-        x = x.expand(-1, 3, -1, -1)
-
+        
         encode = []
         xx = self.stem0(x); encode.append(xx)
         xx = F.avg_pool2d(xx,kernel_size=2,stride=2)
