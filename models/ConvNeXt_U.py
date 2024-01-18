@@ -12,7 +12,7 @@ class ConvNeXt_U(nn.Module):
         encoder_dim = [24, 48, 96, 192, 384, 768]
         decoder_dim = [384, 192, 96, 48, 24]
 
-        self.encoder = create_model('convnext_small.fb_in22k', pretrained=False, in_chans=1)
+        self.encoder = create_model('convnext_small.fb_in22k', pretrained=True, in_chans=1)
 
         self.decoder = MyUnetDecoder(
             in_channel  = encoder_dim[-1],
